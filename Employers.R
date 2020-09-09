@@ -1,0 +1,358 @@
+library(ggplot2)
+library(reshape2)
+library(RColorBrewer)
+library(plyr)
+library(dplyr)
+library(ggthemes)
+library(stringr)
+library(scales)
+library(magrittr)
+install.packages('cramer', lib='C:/Users/Evanc/Desktop')
+library(devtools)
+library(cramer)
+
+setwd("C:/Users/Evanc/Desktop/Github/Evans_EvaluationInternship/")
+setwd("C:/Users/evanlih/Desktop/Github/Evans_EvaluationInternship")
+Employers<-read.csv("Employers_Clean.csv", stringsAsFactors = FALSE)
+Employers= Employers[-1,]
+
+
+Employers2 <- Employers[!is.na(Employers$Q20),]
+Employers2 <- Employers2[!is.na(Employers2$Q13),]
+
+Employers2 <- Employers2[!(Employers2$Q20 == ""),]
+
+
+Employers2$Q13 %<>% as.numeric()
+
+Compensation<- aov(Q13 ~ Q20, data = Employers2)
+
+Employers2$Q4_1 %<>% as.factor()
+test <- chisq.test(Q4_1 ~ Q20, data = Employers2)
+chisq.test(x = Employers2$Q20, y = Employers2$Q4_1)
+chisq.test(x = Employers2$Q20, y = Employers2$Q4_2)
+
+
+test6 <- Employers2 %>% select(Q6, Q21)
+
+test6$Q21 %<>% as.character()
+test6$Q6[test6$Q6=="No (please specify):"] <- 0
+test6$Q6[test6$Q6=="Yes"] <- 1
+test6$Q21[test6$Q21=="No"] <- 0
+test6$Q21[test6$Q21=="Yes"] <- 1
+
+test6$Q6 %<>% as.numeric()
+test6$Q21 %<>% as.numeric()
+
+
+Q6_Q21 <- chisq.test(x = test6$Q6, y = test6$Q21)
+sqrt(Q6_Q21$statistic/sum(test6))
+
+test6$Q6 %<>% as.factor
+test6$Q21 %<>% as.factor
+
+Employers_numeric <- read.csv("Employers_Clean.csv")
+
+test7 <- Employers_numeric %>% select(Q5, Q7)
+
+test7$Q5 %<>% as.numeric
+test7$Q7 %<>% as.numeric
+Q5_Q7 <- chisq.test(x = test7$Q5, y = test7$Q7)
+
+sqrt(Q5_Q7$statistic/sum(test7))
+
+
+ggplot(Employers2, aes(Q6, Q21)) +
+  geom_boxplot()
+
+
+
+Employers2$Q20 <- factor(Employers2$Q20, levels = c("0-19", "20-99", "100-499", "500+"))
+
+
+test9<- Employers2 %>% 
+  group_by(Q19) %>%
+  summarise("Mean compensation" = mean(Q13, na.rm = T)) %>%
+  ungroup  
+
+
+#####Q3 ######
+
+EmployersQ3 <- read.csv("Employers_Q3.csv")
+
+
+EmployersQ3 %<>% arrange(desc(Count))
+
+ggplot(EmployersQ3, aes(Answer, Count, fill = Answer)) +
+  geom_bar(stat = "identity") +
+  scale_fill_brewer(palette="RdBu") +
+  theme_fivethirtyeight() +
+  coord_flip() +
+  labs(title="What is your organization's view on the purpose of internships? (check all that apply)", y="",x="") +
+  theme(plot.title = element_text(size=14, hjust=1)) +
+  theme(axis.text.y = element_text(hjust=0)) +
+  theme(legend.position="none") +
+  guides(fill=guide_legend(title="Percent")) + 
+  scale_y_continuous(labels = percent, breaks = seq(0,1, by = .05), limits = c(0,.30))
+
+#scale_fill_manual(values =  c("#f4a682","#dfdfdf","#0571B1","#92c6de")) +
+  
+  
+  #####Q5 ######
+
+EmployersQ5 <- read.csv("Employers_Q5.csv")
+
+EmployersQ5$Answer %<>% factor
+EmployersQ3 %<>% arrange(desc(Count))
+
+ggplot(EmployersQ5, aes(x=reorder(Answer, +Count), Count, fill = Answer)) +
+  geom_bar(stat = "Identity") +
+  scale_fill_brewer(palette="RdBu", direction =-1) +
+  theme_fivethirtyeight() +
+  coord_flip() +
+  labs(title="How are internships typically developed in your organization?", y="",x="") +
+  theme(plot.title = element_text(size=14, hjust=1)) +
+  theme(axis.text.y = element_text(hjust=0)) + 
+  scale_x_discrete(labels = wrap_format(30)) +
+  theme(legend.position="none") +
+  guides(fill=guide_legend(title="Percent")) + 
+  scale_y_continuous(labels = percent, breaks = seq(0,.55, by = .10), limits = c(0,.55)) 
+
+#####Q6####
+Employers$Q6[Employers$Q6=="No (please specify):"] <- "No"
+
+
+ggplot(Employers, aes(Q6 ,fill = Q6)) +
+  geom_bar(aes(y = (..count..)/sum(..count..)), width = .5) +
+  scale_fill_manual(values = c("#CA0020", "#0571B0")) +
+  theme_fivethirtyeight() + 
+  labs(title="Are graduate intern(s) hired in your department or organization\n on a recurring basis?", y="",x="") +
+  theme(plot.title = element_text(size=14, hjust=0.5)) +
+  theme(axis.text.y = element_text(hjust=0)) +
+  theme(legend.position="none") +
+  scale_x_discrete(labels = wrap_format(30)) +
+  scale_y_continuous(labels = percent, breaks = seq(0,1, by = .20), limits = c(0,.80)) +
+  guides(fill=guide_legend(nrow=3, ncol = 2, byrow=TRUE))
+
+
+#####Q7####
+
+Employers$Q7 %<>% factor()
+
+ggplot(Employers, aes(Q7 ,fill = Q7)) +
+  geom_bar(aes(y = (..count..)/sum(..count..)), width = .5) +
+  theme_fivethirtyeight() + 
+  coord_flip() +
+  scale_fill_brewer(palette="RdBu", direction = -1) +
+  labs(title="What is the level of interaction you personally have \nwith graduate interns?", y="",x="") +
+  theme(plot.title = element_text(size=14, hjust=.5)) +
+  theme(axis.text.y = element_text(hjust=0)) +
+  theme(legend.position="none") +
+  scale_x_discrete(labels = wrap_format(30)) +
+  scale_y_continuous(labels = percent, breaks = seq(0,1, by = .20), limits = c(0,.80)) +
+  guides(fill=guide_legend(nrow=3, ncol = 2, byrow=TRUE))
+
+####Q11#####
+Employers$Q11 %<>% factor()
+
+EmployersQ11 <- Employers
+EmployersQ11 <- EmployersQ11[!(EmployersQ11$Q11 == ""),]
+
+
+ggplot(EmployersQ11, aes(Q11 ,fill = Q11)) +
+  geom_bar(aes(y = (..count..)/sum(..count..)), width = .5) +
+  theme_fivethirtyeight() + 
+  coord_flip() +
+  scale_fill_manual(values = c("#0571b1", "#92c6de","#f4a682")) +
+  labs(title="How far in advance of an intern start-date \ndo you begin your recruiting process?", y="",x="") +
+  theme(plot.title = element_text(size=14, hjust=.5)) +
+  theme(axis.text.y = element_text(hjust=0)) +
+  theme(legend.position="none") +
+  scale_x_discrete(labels = wrap_format(30)) +
+  scale_y_continuous(labels = percent, breaks = seq(0,1, by = .10), limits = c(0,.70)) +
+  guides(fill=guide_legend(nrow=3, ncol = 2, byrow=TRUE))
+
+####Q12#####
+EmployersQ12 <- read.csv("Employers_Q12.csv")
+
+ggplot(EmployersQ12, aes(Answer , Percent, fill = Answer)) +
+  geom_bar(stat = "identity") +
+  theme_fivethirtyeight() + 
+  coord_flip() +
+ labs(title="Where does your organization typically advertise internships? \n(select all that apply)", y="",x="") +
+  scale_fill_manual(values =  rev(c("#2166AC", "#67A9CF","#D1E5F0","#DB7093","#FDDBC7", "#EF8A62", "#B2182B"))) +  
+  theme(plot.title = element_text(size=14, hjust=.5)) +
+  theme(axis.text.y = element_text(hjust=0)) +
+  theme(legend.position="none") +
+  scale_x_discrete(labels = wrap_format(40)) +
+  scale_y_continuous(labels = percent, breaks = seq(0,1, by = .05), limits = c(0,.35)) +
+  guides(fill=guide_legend(nrow=3, ncol = 2, byrow=TRUE))
+
+
+scale_fill_manual(values =  c("#2166AC", "#67A9CF","#D1E5F0","#F4FA58","#FDDBC7", "#EF8A62", "#B2182B")) 
+
+  
+  #####Q13#####
+
+summary(Employers2)
+means <- aggregate(Q13 ~  Q20, Employers2, mean)
+
+means$Q13 <- round(means$Q13, 2)
+
+summary(Employers2$Q13)
+
+ggplot(Employers2, aes(Q20, Q13, fill = Q20)) + 
+  geom_boxplot(show.legend = FALSE, width = .5) +
+  theme_fivethirtyeight() + 
+  stat_summary(fun.y=mean, colour="darkred", geom="point",shape=18, size=3,show.legend = TRUE) + 
+  labs(title="Compensation ($ per hour) by organization size", caption = "Red dot and Value indicates mean $ per hour by organization size") +
+  geom_text(data = means, aes(label = Q13, y = Q13), hjust = 1.2, size = 3.5) +
+  theme(plot.title = element_text(size=14, hjust=.5), plot.caption = element_text(hjust = .5)) + theme(axis.title = element_text()) + 
+  ylab('Dollars per hour') +
+  xlab("Organization Size") +
+  scale_fill_brewer(palette="RdBu", direction = +1) +
+  theme(legend.position="none") +
+  scale_y_continuous(labels = dollar, breaks = seq(0,50, by = 5), limits = c(0,35))
+
+
+ggplot(Employers2, aes(x=Q13)) +
+  theme_fivethirtyeight() + 
+  geom_histogram(binwidth=1, colour="white", fill="#2166AC") +
+  geom_vline(aes(xintercept=mean(Q13, na.rm=T)),
+             color="red", linetype="dashed", size=1) +
+  scale_x_continuous(labels = dollar, breaks = seq(0,50, by = 5)) +
+  coord_cartesian(xlim=c(0, 35)) +
+  theme(plot.title = element_text(size=14, hjust=.5), plot.subtitle = element_text(hjust = .5)) + theme(axis.title = element_text()) + 
+  labs(title="What compensation ($ per hour) do you currently offer interns?", subtitle = "(For stipend-based compensation, please convert into an \nhourly rate by dividing the total stipend by the expected or required amount of hours)") +
+  ylab('Frequency') +
+  xlab("Dollars per hour")
+
+###Q17####
+Employers$Q17[Employers$Q17=="Other (please specify):"] <- "Other"
+
+EmployersQ17 <- Employers[!(Employers$Q17 == ""),]
+
+EmployersQ17$Q17 <- factor(EmployersQ17$Q17, levels = c( "Other", "For-profit/Social Enterprise", "Non-profit/NGO", "Public/Government"))
+
+ggplot(EmployersQ17, aes(Q17 ,fill = Q17)) +
+  geom_bar(aes(y = (..count..)/sum(..count..)), width = .5) +
+  scale_fill_brewer(palette="RdBu", direction = +1) +
+  theme_fivethirtyeight() + 
+  coord_flip() +
+  labs(title=" Which of the following sectors best describes your organization?", y="",x="") +
+  theme(plot.title = element_text(size=14, hjust=0.5)) +
+  theme(axis.text.y = element_text(hjust=0)) +
+  theme(legend.position="none") +
+  scale_x_discrete(labels = wrap_format(30)) +
+  scale_y_continuous(labels = percent, breaks = seq(0,1, by = .10), limits = c(0,.65)) +
+    theme(legend.position="none") +
+  guides(fill=guide_legend(nrow=3, ncol = 2, byrow=TRUE))
+
+ ###Q18###
+
+EmployersQ18 <- Employers[!(Employers$Q18 == ""),]
+
+EmployersQ18$Q18 <- factor(EmployersQ18$Q18, levels = c("Tribal","Other Country/International", "  US federal", "  US state", "US local (city, county, regional government)"))
+
+ggplot(EmployersQ18, aes(Q18 ,fill = Q18)) +
+  geom_bar(aes(y = (..count..)/sum(..count..)), width = .5, na.rm = TRUE) +
+  scale_fill_brewer(palette="RdBu", direction = +1) +
+  theme_fivethirtyeight() + 
+  coord_flip() +
+  labs(title="Select the sub-sector that most closely aligns with your organization", y="",x="") +
+  theme(plot.title = element_text(size=14, hjust=0.5)) +
+  theme(axis.text.y = element_text(hjust=0)) +
+  theme(legend.position="none") +
+  scale_x_discrete(labels = wrap_format(30), drop = F) +
+  scale_y_continuous(labels = percent, breaks = seq(0,1, by = .10), limits = c(0,.75)) +
+  theme(legend.position="none") +
+  guides(fill=guide_legend(nrow=3, ncol = 2, byrow=TRUE))
+
+
+####Q19####
+####Q12#####
+EmployersQ19 <- read.csv("Employers_Q19.csv")
+
+colourCount = length(unique(Employers$hp))
+getPalette = colorRampPalette(brewer.pal(9, "Set1"))
+
+ggplot(EmployersQ19, aes(x = reorder(Answer , +Percent), Percent, fill = Answer)) +
+  geom_bar(stat = "identity", fill = "#2166AC") +
+  theme_fivethirtyeight() + 
+  coord_flip() +
+  labs(title="Which of the following industries most closely align with \nthe work of your organization?", subtitle = "(Select no more than two answer choices)", y="",x="") +
+  theme(plot.title = element_text(size=14, hjust=.5), plot.subtitle = element_text(hjust = .5)) +
+  theme(axis.text.y = element_text(hjust=0)) +
+  theme(legend.position="none") +
+  scale_x_discrete(labels = wrap_format(40)) +
+  scale_y_continuous(labels = percent, breaks = seq(0,1, by = .025), limits = c(0,.18)) +
+  guides(fill=guide_legend(nrow=3, ncol = 2, byrow=TRUE))
+
+####Q20####
+ggplot(EmployersQ17, aes(Q20 ,fill = Q20)) +
+  geom_bar(aes(y = (..count..)/sum(..count..)), width = .5, na.rm = TRUE) +
+  scale_fill_brewer(palette="RdBu", direction = +1) +
+  theme_fivethirtyeight() + 
+  coord_flip() +
+  labs(title="Including yourself, how many people work in your organization or agency?", y="",x="") +
+  theme(plot.title = element_text(size=14, hjust=0.5)) +
+  theme(axis.text.y = element_text(hjust=0)) +
+  theme(legend.position="none") +
+  scale_x_discrete(labels = wrap_format(30), drop = F) +
+  scale_y_continuous(labels = percent, breaks = seq(0,1, by = .10), limits = c(0,.35)) +
+  theme(legend.position="none") +
+  guides(fill=guide_legend(nrow=3, ncol = 2, byrow=TRUE))
+
+####Q21###
+ggplot(EmployersQ17, aes(Q21 ,fill = Q21)) +
+  geom_bar(aes(y = (..count..)/sum(..count..)), width = .5, na.rm = TRUE) +
+  scale_fill_manual(values =  c("#2166AC", "#B2182B")) +  
+  theme_fivethirtyeight() + 
+  coord_flip() +
+  labs(title="Are you currently employing any Evans Interns?", y="",x="") +
+  theme(plot.title = element_text(size=14, hjust=0.5)) +
+  theme(axis.text.y = element_text(hjust=0)) +
+  theme(legend.position="none") +
+  scale_x_discrete(labels = wrap_format(30), drop = F) +
+  scale_y_continuous(labels = percent, breaks = seq(0,1, by = .10), limits = c(0,.55)) +
+  theme(legend.position="none") +
+  guides(fill=guide_legend(nrow=3, ncol = 2, byrow=TRUE))
+
+
+###Q22####
+
+EmployersQ22 <- EmployersQ17[!(EmployersQ17$Q22 == ""),]
+
+ggplot(EmployersQ22, aes(Q22 ,fill = Q22)) +
+  geom_bar(aes(y = (..count..)/sum(..count..)), width = .5, na.rm = TRUE) +
+  scale_fill_manual(values =  rev(c("#2166AC", "#B2182B"))) +  
+  theme_fivethirtyeight() + 
+  coord_flip() +
+  labs(title="Would you like more information about the \nEvans School Internship Program?", y="",x="") +
+  theme(plot.title = element_text(size=14, hjust=0.5)) +
+  theme(axis.text.y = element_text(hjust=0)) +
+  theme(legend.position="none") +
+  scale_x_discrete(labels = wrap_format(30), drop = F) +
+  scale_y_continuous(labels = percent, breaks = seq(0,1, by = .10), limits = c(0,.70)) +
+  theme(legend.position="none") +
+  guides(fill=guide_legend(nrow=3, ncol = 2, byrow=TRUE))
+
+####Q23####
+
+EmployersQ23 <- EmployersQ17[!(EmployersQ17$Q23 == ""),]
+EmployersQ23$Q23[EmployersQ23$Q23=="No (please specify) :"] <- "No"
+EmployersQ23$Q23 <- factor(EmployersQ23$Q23, levels = c("No", "Maybe", "Yes"))
+ggplot(EmployersQ23, aes(Q23,fill = Q23)) +
+  geom_bar(aes(y = (..count..)/sum(..count..)), width = .5, na.rm = TRUE) +
+  scale_fill_manual(values =  rev(c("#2166AC", "#EF8A62","#B2182B"))) +  
+  theme_fivethirtyeight() + 
+  coord_flip() +
+  labs(title="Is your organization interested in \nexpanding/hiring more Evans interns?", y="",x="") +
+  theme(plot.title = element_text(size=14, hjust=0.5)) +
+  theme(axis.text.y = element_text(hjust=0)) +
+  theme(legend.position="none") +
+  scale_x_discrete(labels = wrap_format(30), drop = F) +
+  scale_y_continuous(labels = percent, breaks = seq(0,1, by = .10), limits = c(0,.60)) +
+  theme(legend.position="none") +
+  guides(fill=guide_legend(nrow=3, ncol = 2, byrow=TRUE))
+''
